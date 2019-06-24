@@ -133,5 +133,6 @@ else
 	echo "COMMANDS:
 	ports
 	start
-	status"
+	status
+	stop"
 fi
