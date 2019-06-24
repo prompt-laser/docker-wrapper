@@ -1,0 +1,127 @@
+#!/bin/bash
+
+IMAGE="majestic"
+
+function start {
+	if [ $1 ]
+	then
+		if [ $1 -eq $1 ]
+		then
+			counter=$1
+		else
+			echo "Only accepts integer values or no value at all"
+		fi
+	else
+		counter=1
+	fi
+
+	c=0
+
+	echo "Starting $counter $IMAGE containers..."
+	while [ $c -lt $counter ]
+	do
+		docker run -d --rm -P $IMAGE > /dev/null 2>&1
+		c=$(($c+1))
+	done
+}
+
+function get_target_containers {
+	docker ps | grep $IMAGE
+}
+
+function show_running_containers {
+	containers="$(get_target_containers)"
+	readarray -t arr <<< "$containers"
+	if [ "${arr[0]}" != "" ]
+	then
+		i=0
+		while [ $i -lt ${#arr[@]} ]
+		do
+			echo "$i:	${arr[$i]}"
+			i=$(($i+1))
+		done
+	else
+		echo ""
+	fi
+}
+
+function ports {
+	get_target_containers | awk '{print $12}'
+}
+
+function status {
+	get_target_containers
+}
+
+function stop_target_container {
+	docker stop $1
+}
+
+function stop_container_by_index {
+	containers="$(get_target_containers)"
+	readarray -t arr <<< "$containers"
+	target_container="$(echo ${arr[$1]})"
+	read -ra words <<< "$target_container"
+	target_id="${words[0]}"
+	target_name="${words[12]}"
+	echo "Stopping container with ID $target_id"
+	docker stop "$target_id" > /dev/null 2>&1
+}
+
+function stop_all {
+	containers="$(get_target_containers)"
+	readarray -t arr <<< "$containers"
+	if [ "${arr[0]}" != "" ]
+	then
+		i=0
+		echo "Stopping all ${#arr[@]} running $IMAGE containers..."
+		while [ $i -lt ${#arr[@]} ]
+		do
+			echo "${arr[$i]}" | stop_target_container "$(awk '{print $1}')" > /dev/null 2>&1
+			i=$(($i+1))
+		done
+	else
+		echo "No containers to stop"
+	fi
+}
+
+function stop {
+	if [ "$2" == "" ]
+	then
+		containers="$(show_running_containers)"
+		if [ "$containers" != "" ]
+		then
+			echo "Please enter the number of the container you would like to stop"
+			show_running_containers
+			read answer
+			stop_container_by_index $answer
+		else
+			echo "There are no running containers"
+		fi
+	elif [ "$2" == "all" ]
+	then
+		stop_all
+	fi
+}
+
+if [ $1 ]
+then
+	if [ $1 == "start" ]
+	then
+		start $2
+	elif [ $1 == "status" ]
+	then
+		status
+	elif [ $1 == "ports" ]
+	then
+		ports
+	elif [ $1 == "stop" ]
+	then
+		stop $@
+	fi
+else
+	echo "COMMANDS:
+	ports
+	start
+	status"
+fi
