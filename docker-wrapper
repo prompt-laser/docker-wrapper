@@ -3,26 +3,31 @@
 IMAGE="majestic"
 
 function start {
-	if [ $1 ]
+	if [ "$1" == "--help" ]
 	then
-		if [ $1 -eq $1 ]
-		then
-			counter=$1
-		else
-			echo "Only accepts integer values or no value at all"
-		fi
+		echo "start [int <number of continers to start>]"
 	else
-		counter=1
+		if [ $1 ]
+		then
+			regex="^[0-9]+$"
+			if [[ $1 =~ $regex ]]
+			then
+				counter=$1
+			else
+				echo "Only accepts integer values or no value at all"
+				exit
+			fi
+		else
+			counter=1
+		fi
+		c=0
+		echo "Starting $counter $IMAGE containers..."
+		while [ $c -lt $counter ]
+		do
+			docker run -d --rm -P $IMAGE > /dev/null 2>&1
+			c=$(($c+1))
+		done
 	fi
-
-	c=0
-
-	echo "Starting $counter $IMAGE containers..."
-	while [ $c -lt $counter ]
-	do
-		docker run -d --rm -P $IMAGE > /dev/null 2>&1
-		c=$(($c+1))
-	done
 }
 
 function get_target_containers {
@@ -86,21 +91,26 @@ function stop_all {
 }
 
 function stop {
-	if [ "$2" == "" ]
+	if [ "$2" == "--help" ]
 	then
-		containers="$(show_running_containers)"
-		if [ "$containers" != "" ]
+		echo $'options:\n\tno parameters - display a list of running containers to choose from\n\tall - stop all running containers'
+	else
+		if [ "$2" == "" ]
 		then
-			echo "Please enter the number of the container you would like to stop"
-			show_running_containers
-			read answer
-			stop_container_by_index $answer
-		else
-			echo "There are no running containers"
+			containers="$(show_running_containers)"
+			if [ "$containers" != "" ]
+			then
+				echo "Please enter the number of the container you would like to stop"
+				show_running_containers
+				read answer
+				stop_container_by_index $answer
+			else
+				echo "There are no running containers"
+			fi
+		elif [ "$2" == "all" ]
+		then
+			stop_all
 		fi
-	elif [ "$2" == "all" ]
-	then
-		stop_all
 	fi
 }
 
