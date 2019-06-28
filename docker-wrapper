@@ -24,7 +24,7 @@ function start {
 		echo "Starting $counter $IMAGE containers..."
 		while [ $c -lt $counter ]
 		do
-			docker run -d --rm -P $IMAGE > /dev/null 2>&1
+			docker run -d --rm -P $IMAGE > /dev/null 2>&1 &
 			c=$(($c+1))
 		done
 	fi
@@ -59,7 +59,7 @@ function status {
 }
 
 function stop_target_container {
-	docker stop $1
+	docker stop $1 &
 }
 
 function stop_container_by_index {
